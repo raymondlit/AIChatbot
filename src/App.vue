@@ -22,23 +22,25 @@
             </div>
           </div>
 
-          <label class="upload-zone" @click="triggerFileInput">
-            <div class="upload-icon">↑</div>
-            <div class="upload-text-main">拖拽文件到此区域，或点击选择</div>
-            <div class="upload-text-sub">
-              支持 PDF、DOCX、PPT、TXT、MP4、MP3 等常见格式
-            </div>
-            <div class="upload-btn-wrapper">
-              <button type="button" class="btn btn-primary btn-sm">选择文件</button>
-            </div>
-            <input
-              ref="fileInput"
-              type="file"
-              multiple
-              style="display: none"
-              @change="handleFilesSelected"
-            />
-          </label>
+          <div class="upload-area">
+            <label class="upload-zone">
+              <div class="upload-icon">↑</div>
+              <div class="upload-text-main">拖拽文件到此区域，或点击选择</div>
+              <div class="upload-text-sub">
+                支持 PDF、DOCX、PPT、TXT、MP4、MP3 等常见格式
+              </div>
+              <input
+                ref="fileInput"
+                type="file"
+                multiple
+                style="display: none"
+                @change="handleFilesSelected"
+              />
+            </label>
+            <button type="button" class="btn btn-primary btn-upload" @click="triggerFileInput">
+              选择文件
+            </button>
+          </div>
         </div>
 
         <!-- 已上传文件列表 -->
@@ -322,11 +324,12 @@ const handleFilesSelected = async (e) => {
     try {
       const payload = { name: file.name, type: ext || 'other' };
 
+      // 所有文件都先尝试读取纯文本，PDF 额外带上 base64 让后端有能力做更精细解析
+      payload.content = await file.text();
+
       if (ext === 'pdf') {
         const buf = await file.arrayBuffer();
         payload.contentBase64 = arrayBufferToBase64(buf);
-      } else {
-        payload.content = await file.text();
       }
 
       const res = await fetch(`${API_BASE}/api/materials`, {
@@ -495,7 +498,14 @@ body {
   color: #999;
   margin-top: 2px;
 }
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
 .upload-zone {
+  width: 100%;
   border: 1px dashed #cbd5f5;
   background: #f7f9ff;
   border-radius: 8px;
@@ -503,6 +513,7 @@ body {
   text-align: center;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
+  box-sizing: border-box;
 }
 .upload-zone:hover {
   border-color: #0b61ff;
@@ -528,8 +539,10 @@ body {
   font-size: 12px;
   color: #888;
 }
-.upload-btn-wrapper {
-  margin-top: 16px;
+.btn-upload {
+  min-width: 120px;
+  padding: 8px 20px;
+  font-size: 14px;
 }
 .btn {
   display: inline-flex;
